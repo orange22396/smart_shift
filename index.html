@@ -1207,18 +1207,18 @@ function getDayReq(dateS) {
 // ─── 初始員工資料 ─────────────────────────────────────────
 // 依照片順序，以入職日模擬資深程度（資深在上）
 let employees = [
-  { name: '妖妖', joinDate: '2018-01-01', manager: true  },
+  { name: '妡妡', joinDate: '2018-01-01', manager: true  },
   { name: 'Lika', joinDate: '2018-06-01', manager: true  },
   { name: '姿姿', joinDate: '2019-01-01', manager: true  },
   { name: '凱莉', joinDate: '2019-06-01', manager: true  },
   { name: 'Toby', joinDate: '2020-01-01', manager: false },
-  { name: '張熹', joinDate: '2020-06-01', manager: false },
+  { name: '張騫', joinDate: '2020-06-01', manager: false },
   { name: '俞如', joinDate: '2021-01-01', manager: false },
   { name: '若綺', joinDate: '2021-06-01', manager: false },
   { name: '盈瑄', joinDate: '2022-01-01', manager: false },
   { name: '淳淳', joinDate: '2022-06-01', manager: false },
   { name: '小魏', joinDate: '2023-01-01', manager: false },
-  { name: '湯蕾', joinDate: '2023-06-01', manager: false },
+  { name: '湯蕎', joinDate: '2023-06-01', manager: false },
   { name: '凱西', joinDate: '2024-01-01', manager: false },
   { name: 'Dino', joinDate: '2024-03-01', manager: false },
   { name: '小邱', joinDate: '2024-06-01', manager: false },
@@ -2825,18 +2825,18 @@ function runTest() {
   // ── 測試5月：OFF / ◎(LEAVE) / 烘(SUPPORT) ──────────────
   // X 不預設，全部交給自動排休補齊
   const mayData = {
-    '妖妖': { OFF: [1, 6, 11],       LEAVE: [12],           SUPPORT: [] },
+    '妡妡': { OFF: [1, 6, 11],       LEAVE: [12],           SUPPORT: [] },
     'Lika': { OFF: [5],             LEAVE: [10, 14, 15, 16], SUPPORT: [2, 9, 21, 25, 31] },
     '姿姿': { OFF: [1, 13, 14, 15], LEAVE: [],              SUPPORT: [] },
     '凱莉': { OFF: [17, 29, 30, 31],LEAVE: [],              SUPPORT: [] },
     'Toby': { OFF: [16, 19, 20, 30],LEAVE: [22, 24],        SUPPORT: [25] },
-    '張熹': { OFF: [2, 3, 18, 19],  LEAVE: [17, 21],        SUPPORT: [] },
+    '張騫': { OFF: [2, 3, 18, 19],  LEAVE: [17, 21],        SUPPORT: [] },
     '俞如': { OFF: [2, 3, 25, 26],  LEAVE: [14],            SUPPORT: [] },
     '若綺': { OFF: [28, 29, 30],    LEAVE: [31],            SUPPORT: [] },
     '盈瑄': { OFF: [1, 2, 3, 4],    LEAVE: [10, 24, 25, 26, 27], SUPPORT: [] },
     '淳淳': { OFF: [8, 12, 18, 22, 23],      LEAVE: [],     SUPPORT: [] },
     '小魏': { OFF: [7],             LEAVE: [],              SUPPORT: [] },
-    '湯蕾': { OFF: [4, 10, 27],     LEAVE: [],              SUPPORT: [] },
+    '湯蕎': { OFF: [4, 10, 27],     LEAVE: [],              SUPPORT: [] },
     '凱西': { OFF: [4, 5, 6, 7],    LEAVE: [],              SUPPORT: [] },
     'Dino': { OFF: [11, 16],        LEAVE: [30, 31],        SUPPORT: [] },
     '小邱': { OFF: [7, 8],          LEAVE: [],              SUPPORT: [] },
