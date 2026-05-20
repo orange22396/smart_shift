@@ -576,6 +576,93 @@ table.sched {
 .stat-cell.bad { color: var(--red); }
 .stat-sep-left { border-left: 2px solid var(--line2); }
 
+/* ── NOTES SECTION ──────────────────────────────────── */
+.notes-section {
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--text);
+  background: var(--white);
+}
+.notes-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--off);
+}
+.notes-header-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-right: 4px;
+}
+.notes-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.notes-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line2);
+  border-radius: 3px;
+  background: var(--white);
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text2);
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+  flex-shrink: 0;
+}
+.notes-tool-btn:hover { background: var(--stone); color: var(--text); }
+.notes-tool-btn.active { background: var(--text); color: var(--white); border-color: var(--text); }
+.notes-tool-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--line2);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+.notes-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  flex-shrink: 0;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.notes-color-dot:hover { transform: scale(1.2); box-shadow: 0 0 0 2px rgba(0,0,0,0.15); }
+.notes-color-dot.active { border-color: rgba(0,0,0,0.55); box-shadow: 0 0 0 2px rgba(0,0,0,0.25); }
+.notes-editor {
+  display: block;
+  width: 100%;
+  min-height: calc(var(--cell-h) * 3);
+  border: none;
+  outline: none;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-family: 'Noto Sans TC', sans-serif;
+  color: var(--text);
+  background: var(--white);
+  line-height: 1.8;
+  box-sizing: border-box;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.notes-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text3);
+  pointer-events: none;
+}
+
 /* ── FLOATING MENU ──────────────────────────────────── */
 .ctx-menu {
   position: fixed;
@@ -1152,6 +1239,20 @@ table.sched {
 <div class="schedule-outer" id="scheduleOuter">
   <div class="schedule-wrap">
     <table class="sched" id="scheduleTable"></table>
+    <div class="notes-section" onclick="event.stopPropagation()">
+      <div class="notes-header">
+        <span class="notes-header-label">備註</span>
+        <div class="notes-toolbar" id="notesToolbar">
+          <button class="notes-tool-btn" id="notesBold" title="粗體" onmousedown="notesFormat('bold',event)">B</button>
+          <div class="notes-tool-sep"></div>
+          <div class="notes-color-dot" style="background:#c0392b" title="紅色" onmousedown="notesColor('#c0392b',event)"></div>
+          <div class="notes-color-dot" style="background:#2c4a7c" title="藍色" onmousedown="notesColor('#2c4a7c',event)"></div>
+          <div class="notes-color-dot" style="background:#d97706" title="橘色" onmousedown="notesColor('#d97706',event)"></div>
+          <div class="notes-color-dot" style="background:#1a1714" title="黑色" onmousedown="notesColor('#1a1714',event)"></div>
+        </div>
+      </div>
+      <div class="notes-editor" id="notesEditor" contenteditable="true" data-placeholder="輸入公告或備註…"></div>
+    </div>
   </div>
 </div>
 
@@ -1276,7 +1377,8 @@ let roles = []; // { id, name, color, min }
 let ctxTarget = null; // {empIdx, dateStr}
 
 let hasAutoRestRun = false;
-let autoRestWarnings = []; // 記錄 fixConsecutive 無法自動修正的連班員工
+let autoRestWarnings = [];
+let notes = ''; // 記錄 fixConsecutive 無法自動修正的連班員工
 
 let scheduleMode = 'shift'; // 'shift' | 'role'
 
@@ -1625,6 +1727,9 @@ function changeMonth(delta) {
     schedule = {};
     prevStreak = {};
     hasAutoRestRun = false;
+    notes = '';
+    const ed = document.getElementById('notesEditor');
+    if (ed) ed.innerHTML = '';
   }
   updateButtonState();
   render();
@@ -2658,9 +2763,19 @@ function exportJpg() {
   showToast('⏳ 正在產生圖片…');
   const wrapper = document.getElementById('scheduleOuter');
 
-  // 匯出前隱藏統計欄（員工不需要看到）
+  // 隱藏統計欄（員工不需要看到）
   const statEls = document.querySelectorAll('[data-stat]');
   statEls.forEach(el => { el.dataset.statPrev = el.style.display; el.style.display = 'none'; });
+
+  // 隱藏備註 toolbar（截圖不需要 UI 按鈕）
+  const toolbar = document.getElementById('notesToolbar');
+  if (toolbar) toolbar.style.display = 'none';
+
+  // 若備註是空的，匯出時整個備註區也隱藏
+  const notesSection = document.querySelector('.notes-section');
+  const notesED = document.getElementById('notesEditor');
+  const notesIsEmpty = notesED && notesED.innerHTML.replace(/<br\s*\/?>/gi,'').trim() === '';
+  if (notesIsEmpty && notesSection) notesSection.style.display = 'none';
 
   // 插入年月標題
   const monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
@@ -2670,22 +2785,26 @@ function exportJpg() {
   exportHeader.textContent = `${curYear}  ${monthNames[curMonth-1]}`;
   wrapper.insertBefore(exportHeader, wrapper.firstChild);
 
+  function restoreExport() {
+    statEls.forEach(el => { el.style.display = el.dataset.statPrev || ''; delete el.dataset.statPrev; });
+    if (toolbar) toolbar.style.display = '';
+    if (notesIsEmpty && notesSection) notesSection.style.display = '';
+    if (document.getElementById('exportHeader')) wrapper.removeChild(exportHeader);
+  }
+
   html2canvas(wrapper, {
-    backgroundColor: '#1a1917',
+    backgroundColor: '#ffffff',
     scale: 2,
     useCORS: true,
   }).then(canvas => {
-    // 還原統計欄 & 移除標題
-    statEls.forEach(el => { el.style.display = el.dataset.statPrev || ''; delete el.dataset.statPrev; });
-    wrapper.removeChild(exportHeader);
+    restoreExport();
     const link = document.createElement('a');
     link.download = `班表_${curYear}-${String(curMonth).padStart(2,'0')}.jpg`;
     link.href = canvas.toDataURL('image/jpeg', 0.92);
     link.click();
     showToast('✅ 已匯出 JPG');
   }).catch(() => {
-    statEls.forEach(el => { el.style.display = el.dataset.statPrev || ''; delete el.dataset.statPrev; });
-    if (document.getElementById('exportHeader')) wrapper.removeChild(exportHeader);
+    restoreExport();
     showToast('⚠ 匯出失敗');
   });
 }
@@ -2761,7 +2880,7 @@ function saveData() {
   try {
     const payload = {
       storeId, year: curYear, month: curMonth,
-      employees, schedule, prevStreak, hasAutoRestRun,
+      employees, schedule, prevStreak, hasAutoRestRun, notes,
     };
     localStorage.setItem(lsKey(curYear, curMonth), JSON.stringify(payload));
     pruneOldData();
@@ -2788,6 +2907,9 @@ function loadData() {
       Object.keys(data.prevStreak).forEach(k => { prevStreak[+k] = data.prevStreak[k]; });
     }
     hasAutoRestRun = data.hasAutoRestRun || false;
+    notes = data.notes || '';
+    const ed = document.getElementById('notesEditor');
+    if (ed) ed.innerHTML = notes;
     return true;
   } catch(e) {
     console.warn('smartShift: 讀取失敗，使用空班表', e);
@@ -2877,7 +2999,75 @@ function resetToMayTest() {
     if (openColorPickerEl) { openColorPickerEl.style.display = 'none'; openColorPickerEl = null; }
     if (openEmpRolesPickerEl) { openEmpRolesPickerEl.style.display = 'none'; openEmpRolesPickerEl = null; }
   });
+
+  // ── Notes editor: save on input ──────────────────────
+  let notesSaveTimer = null;
+  const notesED = document.getElementById('notesEditor');
+  if (notesED) {
+    notesED.addEventListener('input', () => {
+      notes = notesED.innerHTML;
+      clearTimeout(notesSaveTimer);
+      notesSaveTimer = setTimeout(() => saveData(), 600);
+    });
+    // strip external formatting on paste — keep plain text only
+    notesED.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+    });
+    // update toolbar active states on selection change
+    document.addEventListener('selectionchange', notesUpdateToolbar);
+  }
 })();
+
+// ── Notes rich-text toolbar ───────────────────────────
+let notesActiveColor = '#1a1714'; // default black
+
+function notesFormat(cmd, e) {
+  e.preventDefault(); // prevent editor losing focus
+  document.execCommand(cmd, false, null);
+  notesUpdateToolbar();
+  const ed = document.getElementById('notesEditor');
+  if (ed) { notes = ed.innerHTML; saveData(); }
+}
+
+function notesColor(color, e) {
+  e.preventDefault();
+  notesActiveColor = color;
+  document.execCommand('foreColor', false, color);
+  notesUpdateToolbar();
+  const ed = document.getElementById('notesEditor');
+  if (ed) { notes = ed.innerHTML; saveData(); }
+}
+
+function notesUpdateToolbar() {
+  // bold button
+  const boldBtn = document.getElementById('notesBold');
+  if (boldBtn) boldBtn.classList.toggle('active', document.queryCommandState('bold'));
+  // color dots — highlight whichever matches current foreColor
+  const dots = document.querySelectorAll('.notes-color-dot');
+  let cur = '';
+  try { cur = document.queryCommandValue('foreColor'); } catch(e) {}
+  // normalize cur to hex for comparison
+  dots.forEach(dot => {
+    const dotColor = dot.style.background;
+    dot.classList.toggle('active', cur !== '' && colorsMatch(cur, dotColor));
+  });
+}
+
+function colorsMatch(a, b) {
+  // convert both to lowercase hex-ish string for loose comparison
+  return normalizeColor(a) === normalizeColor(b);
+}
+function normalizeColor(c) {
+  if (!c) return '';
+  // handle rgb(r,g,b)
+  const m = c.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (m) {
+    return '#' + [m[1],m[2],m[3]].map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
+  }
+  return c.toLowerCase().replace(/\s/g,'');
+}
 
 </script>
 </body>
